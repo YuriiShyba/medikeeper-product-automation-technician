@@ -1,0 +1,18 @@
+{
+  "name": "product-automation-take-home",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Cypress product quality gates for the MediKeeper take-home portal.",
+  "scripts": {
+    "automation:gate": "cypress run --headed --spec cypress/e2e/login/login.spec.ts,cypress/e2e/registration/registration.spec.ts,cypress/e2e/registration/password.spec.ts,cypress/e2e/recovery/recovery.spec.ts",
+    "automation:known-defects": "cypress run --spec cypress/e2e/known-defects/*.spec.ts",
+    "automation:authenticated-gate": "cypress run --spec cypress/e2e/login/authenticated-login-quality-gate.spec.ts",
+    "cy:open": "cypress open",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "cypress": "^15.0.0",
+    "typescript": "^5.9.0"
+  }
+}

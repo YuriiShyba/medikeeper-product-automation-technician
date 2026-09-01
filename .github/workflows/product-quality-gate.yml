@@ -1,0 +1,84 @@
+name: Product Quality Gate
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      run_authenticated_gate:
+        description: Run the provisioned authenticated/backend quality gate
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: product-quality-gate-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+  
+jobs:
+  quality-gate:
+    name: Quality Gate
+    if: ${{ github.event_name != 'workflow_dispatch' || inputs.run_authenticated_gate != true }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Run normal product quality gate
+        run: npm run automation:gate
+
+  known-defects:
+    name: Known Defects (non-blocking)
+    needs: quality-gate
+    if: ${{ github.event_name != 'workflow_dispatch' || inputs.run_authenticated_gate != true }}
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Run known-defect requirements
+        run: npm run automation:known-defects
+
+  authenticated-gate:
+    name: Authenticated Backend Gate (manual only)
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_authenticated_gate == true }}
+    runs-on: ubuntu-latest
+    environment: authenticated-quality-gate
+    env:
+      CYPRESS_AUTH_USERNAME: ${{ secrets.CYPRESS_AUTH_USERNAME }}
+      CYPRESS_AUTH_PASSWORD: ${{ secrets.CYPRESS_AUTH_PASSWORD }}
+      CYPRESS_AUTH_MFA_CODE: ${{ secrets.CYPRESS_AUTH_MFA_CODE }}
+      CYPRESS_AUTH_MFA_INPUT_SELECTOR: ${{ secrets.CYPRESS_AUTH_MFA_INPUT_SELECTOR }}
+      CYPRESS_AUTH_MFA_SUBMIT_SELECTOR: ${{ secrets.CYPRESS_AUTH_MFA_SUBMIT_SELECTOR }}
+      CYPRESS_AUTHENTICATED_STATE_SELECTOR: ${{ vars.CYPRESS_AUTHENTICATED_STATE_SELECTOR }}
+      CYPRESS_LAST_LOGIN_UPDATE_TIMEOUT_MS: ${{ vars.CYPRESS_LAST_LOGIN_UPDATE_TIMEOUT_MS }}
+      TAKEHOME_DB_ADAPTER: ${{ vars.TAKEHOME_DB_ADAPTER }}
+      TAKEHOME_DB_CONNECTION: ${{ secrets.TAKEHOME_DB_CONNECTION }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Run provisioned authenticated quality gate
+        run: npm run automation:authenticated-gate

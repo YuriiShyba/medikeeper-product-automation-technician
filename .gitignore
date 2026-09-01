@@ -1,0 +1,17 @@
+node_modules/
+.cache/
+.env
+.env.*
+!.env.example
+
+cypress/screenshots/
+cypress/videos/
+cypress/downloads/
+
+coverage/
+dist/
+*.log
+
+.DS_Store
+.idea/
+.vscode/
